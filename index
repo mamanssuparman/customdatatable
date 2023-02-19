@@ -1,0 +1,55 @@
+// Script Index
+const table = $('#idDataTable').DataTable({
+    "pageLength"    : 10,
+    "lengthMenu"    : [
+        [10, 25, 50, 100],
+        [10, 25, 50, 100]
+    ],
+    "bLengthChange" : true,
+    "bFilter"       : true,
+    "bInfo"         : true,
+    "processing"    : true,
+    "bServerSide"   : true,
+    ajax :{
+        url : "",
+        type : "POST",
+    },
+    columnDefs: [{
+        targets : "_all",
+        visible : true,
+    },
+    {
+        "targets"   : 0, //Untuk urutan data di dalam kolom
+        "class"     : "text-nowrap",
+        "render"    : function(data, type, row, meta){
+            return row.namaKolom //menampilkan data dari ServerSide
+        }
+    },
+]
+})
+// Data Dari Controller
+$orderBy = 'namaTable.kolomTable';
+        switch ($request->input('order.0.column')) {
+            case '0': //untuk inisialisasi data kolom
+                $orderBy = 'namaTabel.kolomTable';
+                break;
+        }
+        // Get Data Nya
+        $data = DB::table('namaTabel');
+        // Function filter dari inputan search
+        if($request->input('search.value')!= null){
+            $data = $data->where(function($q)use($request){
+                $q->whereRaw('LOWER(namaTabel.kolom) like ?',['%'.$request->input('search.value').'%']);
+            });
+        }
+        
+        $recordsFiltered = $data->get()->count(); //menampilkan jumlah Isi Record yang terfilter
+        if($request->input('length')!= -1)$data = $data->skip($request->input('start'))->take($request->input('length'));
+        $data = $data->orderBy($orderBy, $request->input('order.0.dir'))->get();
+        $recordsTotal = $data->count(); //menampilkan jumlah seluruh data
+        return response()->json([
+            'draw' => $request->input('draw'),
+            'recordsTotal'  => $recordsTotal,
+            'recordsFiltered'   => $recordsFiltered,
+            'data'  => $data
+        ]);
